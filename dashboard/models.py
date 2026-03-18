@@ -8,6 +8,10 @@ class Requester(models.Model):
 
     def __str__(self):
         return f"{self.name} {self.last_name}"
+    
+    @property
+    def full_name(self):
+        return f"{self.name} {self.last_name}"
 
 
 class Pet(models.Model):
