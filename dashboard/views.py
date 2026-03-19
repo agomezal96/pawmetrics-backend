@@ -70,6 +70,10 @@ class DashboardMetricsView(APIView):
         current_serializer = BookingSerializer(current_bookings_queryset, many=True)
         future_serializer = BookingSerializer(future_bookings_queryset, many=True)
 
+        # Last 3 reviews
+        latest_reviews_queryset = Review.objects.all().order_by("-id")[:3]
+        review_serializer = ReviewSerializer(latest_reviews_queryset, many=True)
+
         data = {
             "pets": {
                 "total_dogs": total_dogs,
@@ -84,5 +88,6 @@ class DashboardMetricsView(APIView):
                 "current_bookings": current_serializer.data,
                 "future_bookings": future_serializer.data,
             },
+            "reviews": {"latest_reviews": review_serializer.data},
         }
         return Response(data)
