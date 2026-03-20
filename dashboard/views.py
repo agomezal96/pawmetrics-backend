@@ -26,7 +26,7 @@ class PetViewSet(viewsets.ModelViewSet):
 
 
 class BookingViewSet(viewsets.ModelViewSet):
-    queryset = Booking.objects.select_related("pet")
+    queryset = Booking.objects.all()
     serializer_class = BookingSerializer
 
 
