@@ -6,6 +6,7 @@ from django.utils import timezone
 
 from rest_framework import viewsets
 from .models import Requester, Pet, Booking, Review
+from .consts import PetSpecies
 from .serializers import (
     RequesterSerializer,
     PetSerializer,
@@ -25,7 +26,7 @@ class PetViewSet(viewsets.ModelViewSet):
 
 
 class BookingViewSet(viewsets.ModelViewSet):
-    queryset = Booking.objects.all()
+    queryset = Booking.objects.select_related("pet")
     serializer_class = BookingSerializer
 
 
@@ -38,10 +39,10 @@ class DashboardMetricsView(APIView):
     def get(self, request):
         now = timezone.now()
         # Count pets by species
-        total_dogs = Pet.objects.filter(species="dog").count()
-        total_cats = Pet.objects.filter(species="cat").count()
+        total_dogs = Pet.objects.filter(species=PetSpecies.DOG).count()
+        total_cats = Pet.objects.filter(species=PetSpecies.CAT).count()
         # Total money
-        # .aggregate returns a dicctionary, so we use ['price__sum']
+        # .aggregate returns a dictionary, so we use ['price__sum']
         past_earnings = (
             Booking.objects.filter(end_date__lt=now).aggregate(Sum("price"))[
                 "price__sum"

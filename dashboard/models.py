@@ -1,24 +1,24 @@
 from django.db import models
 from django.core.validators import MinValueValidator, MaxValueValidator
 
+from .consts import PetSpecies
+
 
 class Requester(models.Model):
     name = models.CharField(max_length=100)
     last_name = models.CharField(max_length=100)
 
     def __str__(self):
-        return f"{self.name} {self.last_name}"
-    
+        return self.full_name
+
     @property
     def full_name(self):
         return f"{self.name} {self.last_name}"
 
 
 class Pet(models.Model):
-    SPECIES_CHOICES = [("dog", "Dog"), ("cat", "Cat")]
-
     name = models.CharField(max_length=100)
-    species = models.CharField(max_length=10, choices=SPECIES_CHOICES)
+    species = models.CharField(max_length=10, choices=PetSpecies.choices)
     # 1:N relation: an owner has lots of pets.
     # If we delete the requester, the pet is not deleted, the requester field will remain null.
     requester = models.ForeignKey(
