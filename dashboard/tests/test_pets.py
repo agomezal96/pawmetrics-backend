@@ -1,8 +1,7 @@
-from django.test import TestCase
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
-from .models import Requester, Pet
+from ..models import Requester, Pet
 
 # We use rest_framework.test.APITestCase.
 # Think of this as a "Super-Tool" that:
