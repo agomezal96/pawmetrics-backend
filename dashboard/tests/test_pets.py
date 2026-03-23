@@ -25,6 +25,8 @@ class PetAPITests(APITestCase):
 
         self.list_url = reverse("pet-list")
 
+    # GET
+
     def test_get_pet_detail_success(self):
         """
         GET: Test retrieving a specific pet's details
@@ -63,6 +65,8 @@ class PetAPITests(APITestCase):
         # We EXPECT a 404 Not Found. If the API returns 200, the test fails!
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
+    # POST
+
     def test_create_pet_success(self):
         """
         POST: Test creating a pet with valid data
@@ -81,3 +85,35 @@ class PetAPITests(APITestCase):
         response = self.client.post(self.list_url, payload, format="json")
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    # DELETE
+
+    def test_delete_pet_success(self):
+        """
+        DELETE: Verify that a pet is correctly removed from the database.
+        """
+        # 1. Create a pet to be deleted
+        pet_to_delete = Pet.objects.create(
+            name="Boris", species="dog", requester=self.requester
+        )
+        # 2. Build the detail URL for that specific pet
+        delete_url = reverse("pet-detail", kwargs={"pk": pet_to_delete.id})
+
+        # 3. ACTION: Perform the DELETE request
+        response = self.client.delete(delete_url)
+
+        # 4. ASSERT: Status code must be 204 (Standard for successful deletion)
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+
+        # 5. ASSERT: Check if the pet is actually gone from the DB
+        exists = Pet.objects.filter(id=pet_to_delete.id).exists()
+        self.assertFalse(exists)
+
+    def test_delete_non_existent_pet_fails(self):
+        """
+        NEGATIVE: Deleting a non-existent ID should return 404.
+        """
+        invalid_url = reverse("pet-detail", kwargs={"pk": 9999})
+        response = self.client.delete(invalid_url)
+
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
