@@ -63,3 +63,22 @@ class PetAPITests(APITestCase):
 
         # We EXPECT a 404 Not Found. If the API returns 200, the test fails!
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_create_pet_success(self):
+        """
+        POST: Test creating a pet with valid data
+        """
+        payload = {"name": "Coco", "species": "dog", "requester": self.requester.id}
+        response = self.client.post(self.list_url, payload, format="json")
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(Pet.objects.count(), 1)
+
+    def test_create_pet_missing_name_fails(self):
+        """
+        POST: Test validation error when name is missing
+        """
+        payload = {"species": "dog", "requester": self.requester.id}
+        response = self.client.post(self.list_url, payload, format="json")
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
