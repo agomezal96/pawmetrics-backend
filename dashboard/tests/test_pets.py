@@ -50,9 +50,9 @@ class PetAPITests(APITestCase):
         # CHECK 2: The Data Accuracy
         # 'response.data' is the JSON object the API returned.
         # We check if the 'name' in the JSON is exactly 'Merlin'
-        self.assertEqual(response.data["name"], "Calima")
+        self.assertEqual(response.data["name"], pet.name)
         # We check if the 'species' is 'Cat'
-        self.assertEqual(response.data["species"], "cat")
+        self.assertEqual(response.data["species"], pet.species)
 
     def test_get_non_existent_pet_returns_404(self):
         """
