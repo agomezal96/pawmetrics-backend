@@ -26,6 +26,7 @@ class BookingSerializer(serializers.ModelSerializer):
         model = Booking
         fields = [
             "id",
+            "service",
             "start_date",
             "end_date",
             "price",

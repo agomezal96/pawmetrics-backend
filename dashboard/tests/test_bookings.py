@@ -30,6 +30,7 @@ class BookingAPITests(APITestCase):
         # 1. Create the Booking
         booking = Booking.objects.create(
             pet=self.pet,
+            service="boarding",
             start_date="2026-04-01",
             end_date="2026-04-05",
             price=120.00,
@@ -52,7 +53,7 @@ class BookingAPITests(APITestCase):
 
         # CHECKING THE PET NAME:
         # This will pass ONLY if your BookingSerializer includes "pet_name"
-        self.assertEqual(response.data["pet_name"], "Calima")
+        self.assertEqual(response.data["pet_name"], self.pet.name)
 
     def test_booking_id_not_found(self):
         """
@@ -71,6 +72,7 @@ class BookingAPITests(APITestCase):
         # 1. Define the payload. We use self.pet.id from the setUp to link the booking
         payload = {
             "pet": self.pet.id,
+            "service": "boarding",
             "start_date": "2026-04-01T00:00:00Z",
             "end_date": "2026-04-05T00:00:00Z",
             "price": "150.00",
@@ -94,10 +96,11 @@ class BookingAPITests(APITestCase):
         """
         PURIST TEST: Cycle through all required fields and ensure they fail if missing.
         """
-        required_fields = ["pet", "start_date", "end_date", "price"]
+        required_fields = ["pet", "service", "start_date", "end_date", "price"]
 
         base_payload = {
             "pet": self.pet.id,
+            "service": "boarding",
             "start_date": "2026-04-01T00:00:00Z",
             "end_date": "2026-04-05T00:00:00Z",
             "price": "150.00",

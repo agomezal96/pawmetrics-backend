@@ -1,7 +1,7 @@
 from django.db import models
 from django.core.validators import MinValueValidator, MaxValueValidator
 
-from .consts import PetSpecies
+from .consts import PetSpecies, BookingService
 
 
 class Requester(models.Model):
@@ -32,6 +32,10 @@ class Pet(models.Model):
 class Booking(models.Model):
     # 1:N relation: a pet may have lots of bookings.
     pet = models.ForeignKey(Pet, on_delete=models.CASCADE, related_name="bookings")
+    service = models.CharField(
+        max_length=20,
+        choices=BookingService.choices,
+    )
     start_date = models.DateTimeField()
     end_date = models.DateTimeField()
     created_at = models.DateTimeField(auto_now_add=True)
