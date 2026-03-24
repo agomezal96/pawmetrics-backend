@@ -21,6 +21,8 @@ class BookingAPITests(APITestCase):
         # 3. Build the detail URL /api/bookings
         self.list_url = reverse("booking-list")
 
+    # GET
+
     def test_get_booking_detail_success(self):
         """
         GET: Test retrieving a specific booking's detail
@@ -59,3 +61,63 @@ class BookingAPITests(APITestCase):
         invalid_url = reverse("booking-detail", kwargs={"pk": 9999})
         response = self.client.get(invalid_url)
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    # POST
+
+    def test_create_booking_success(self):
+        """
+        POST: Test creating a booking with valid data
+        """
+        # 1. Define the payload. We use self.pet.id from the setUp to link the booking
+        payload = {
+            "pet": self.pet.id,
+            "start_date": "2026-04-01T00:00:00Z",
+            "end_date": "2026-04-05T00:00:00Z",
+            "price": "150.00",
+        }
+        # 2. Action: Send the POST request
+        response = self.client.post(self.list_url, payload, format="json")
+
+        # 3. Assert: Check for 201 created.
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        # 4. Assert: Verify the database count increased
+        # Since the DB was empty before this test (except for setUp) count should be 1
+        self.assertEqual(Booking.objects.count(), 1)
+
+        # 5. ASSERT: Verify the data in the DB matches the payload
+        new_booking = Booking.objects.get()
+        self.assertEqual(new_booking.pet.id, self.pet.id)
+        self.assertEqual(float(new_booking.price), 150.00)
+
+    def test_create_booking_required_fields(self):
+        """
+        PURIST TEST: Cycle through all required fields and ensure they fail if missing.
+        """
+        required_fields = ["pet", "start_date", "end_date", "price"]
+
+        base_payload = {
+            "pet": self.pet.id,
+            "start_date": "2026-04-01T00:00:00Z",
+            "end_date": "2026-04-05T00:00:00Z",
+            "price": "150.00",
+        }
+
+        for field in required_fields:
+            # 1. Copy the payload
+            payload = base_payload.copy()
+            # 2. Remove ONE required field
+            payload.pop(field)
+
+            # 3. Request and Check
+            response = self.client.post(self.list_url, payload, format="json")
+
+            # Message helps identify WHICH field failed in the terminal
+            self.assertEqual(
+                response.status_code,
+                status.HTTP_400_BAD_REQUEST,
+                msg=f"Field '{field}' should be required but the API accepted the request.",
+            )
+
+            # Check that the error message specifically mentions the field
+            self.assertIn(field, response.data)
