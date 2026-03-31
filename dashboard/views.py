@@ -14,6 +14,8 @@ from .serializers import (
     ReviewSerializer,
 )
 
+from .utils import get_period_range
+
 
 class RequesterViewSet(viewsets.ModelViewSet):
     queryset = Requester.objects.all()
@@ -37,58 +39,84 @@ class ReviewViewSet(viewsets.ModelViewSet):
 
 class DashboardMetricsView(APIView):
     def get(self, request):
-        now = timezone.now()
-        # Count pets by species
-        total_dogs = Pet.objects.filter(species=PetSpecies.DOG).count()
-        total_cats = Pet.objects.filter(species=PetSpecies.CAT).count()
-        # Total money
-        # .aggregate returns a dictionary, so we use ['price__sum']
-        past_earnings = (
-            Booking.objects.filter(end_date__lt=now).aggregate(Sum("price"))[
-                "price__sum"
-            ]
-            or 0
-        )
-        future_earnings = (
-            Booking.objects.filter(start_date__gt=now).aggregate(Sum("price"))[
-                "price__sum"
-            ]
-            or 0
-        )
-
-        # Current bookings
-        current_bookings_queryset = Booking.objects.filter(
-            start_date__lte=now, end_date__gt=now
-        ).order_by("end_date")
-
-        # Future bookings
-        # Filter the bookings by date and order it by most recent.
-        future_bookings_queryset = Booking.objects.filter(start_date__gt=now).order_by(
-            "start_date"
-        )
-
-        # SERIALIZATION: Translate these objects to JSON using the serializer. We use many=True because it is a list of bookings, not just one.
-        current_serializer = BookingSerializer(current_bookings_queryset, many=True)
-        future_serializer = BookingSerializer(future_bookings_queryset, many=True)
-
-        # Last 3 reviews
-        latest_reviews_queryset = Review.objects.all().order_by("-id")[:3]
-        review_serializer = ReviewSerializer(latest_reviews_queryset, many=True)
-
+        # 1. Recover the param that is sent by the frontend (period=3_months)
+        period = request.query_params.get('period', None) # In Django Rest Framework, it is a dictionary that contains the URL parameters (what comes after the ?) The first parameter is the key you're looking for ('period'). The second is the default value if that key doesn't exist in the URL. We set it to None so that if the user enters /metrics/ without filters, the period variable will be None, and our logic will know not to filter anything (to retrieve everything).
+        
+        # 2. We obtain the date range:
+        start, end = get_period_range(period)
+        # 3. Create the base queryset. By default it brings everything, but if there is a 'start', we apply the time filter.
+        bookings_qs = Booking.objects.all() # In the database, the Booking is the common thread. Money comes from the Booking.com, pets are listed on the Booking.com, and reviews are based on a Booking.com. If you filter Booking by time, everything else is filtered automatically.
+        if start:
+            bookings_qs = bookings_qs.filter(start_date__range=(start, end))
+        
+        # 4. Build the response by delegating to private methods. We pass them the filtered 'bookings_qs' to ensure consistency.
+        
         data = {
-            "pets": {
-                "total_dogs": total_dogs,
-                "total_cats": total_cats,
-                "total_pets": total_dogs + total_cats,
-            },
-            "earnings": {
-                "past_earnings": float(past_earnings),
-                "future_earnings": float(future_earnings),
-            },
-            "bookings": {
-                "current_bookings": current_serializer.data,
-                "future_bookings": future_serializer.data,
-            },
-            "reviews": {"latest_reviews": review_serializer.data},
+            "pets": self._get_pet_stats(bookings_qs), # Pets from that bookings
+            "earnings": self._get_earnings_stats(bookings_qs), # Money from that bookings
+            "bookings": self._get_booking_stats(bookings_qs), # Lists from that bookings
+            "reviews": self._get_review_stats(bookings_qs), # Reviews from that bookings
         }
+        
         return Response(data)
+        
+        # ---Support and private methods:
+        
+    def _get_pet_stats(self, qs):
+        
+        """Calculates pet statistics based on bookings for the period"""
+        # We obtain the IDs of the unique pets that appear in those bookings
+        
+        # `values_list('pet', ...):` tells Django: "Don't retrieve the entire reservation object, just look at the `pet_id` field."
+        # `flat=True`: By default, Django would give you a list of tuples: `[(5,), (2,), (5,)]`. Setting `flat` flattens it into a single list: `[5, 2, 5]`. This is much easier to work with.
+        # `.distinct()`: This is the "non-duplicate" filter. In our example, the dog `5` appears twice. `.distinct()` clears the list, leaving you with: `[5, 2]`.
+        
+        pet_ids = qs.values_list('pet', flat=True).distinct()
+        pets_in_period = Pet.objects.filter(id__in=pet_ids)
+        
+        # Count pets by species
+        dogs = pets_in_period.filter(species=PetSpecies.DOG).count()
+        cats = pets_in_period.filter(species=PetSpecies.CAT).count()
+        
+        return {
+            "total_dogs": dogs,
+            "total_cats": cats,
+            "total_pets": dogs + cats,
+        }
+    def _get_earnings_stats(self, qs):
+        """Calculates the past and future earnings inside the filtered period"""
+        now = timezone.now()
+        # We filter on the QS that already includes the time range
+        past = qs.filter(end_date__lt=now).aggregate(Sum("price"))["price__sum"] or 0
+        future = qs.filter(start_date__gt=now).aggregate(Sum("price"))["price__sum"] or 0
+        
+        return {
+            "past_earnings": float(past),
+            "future_earnings": float(future),
+        }
+        
+    def _get_bookings_stats(self, qs):
+        """Divide the bookings of the period based in past, current and future"""
+        now = timezone.now()
+        
+        # Classify the bookings by time:
+        
+        past = qs.filter(end_date__lt=now).order_by("-end_date")
+        current = qs.filter(start_date__lte=now, end_date__gt=now).order_by("end_date")
+        future = qs.filter(start_date__gt=now).order_by("start_date")
+        
+        return {
+            "past_bookings": BookingSerializer(past, many=True).data,
+            "current_bookings": BookingSerializer(current, many=True).data,
+            "future_bookings": BookingSerializer(future, many=True).data,
+        }
+        
+    def _get_review_stats(self, qs):
+        "Get the reviews linked to bookings for the selected period"
+        # We just want the reviews of the bookings that are in our filtered queryset
+        reviews = Review.objects.filter(booking__in=qs).order_by("-id")
+        
+        return {
+            "latest_reviews": ReviewSerializer(reviews[:3], many=True).data,
+            "total_reviews": reviews.count()
+        }
