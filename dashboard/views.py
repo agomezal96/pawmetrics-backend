@@ -54,7 +54,7 @@ class DashboardMetricsView(APIView):
         data = {
             "pets": self._get_pet_stats(bookings_qs), # Pets from that bookings
             "earnings": self._get_earnings_stats(bookings_qs), # Money from that bookings
-            "bookings": self._get_booking_stats(bookings_qs), # Lists from that bookings
+            "bookings": self._get_bookings_stats(bookings_qs), # Lists from that bookings
             "reviews": self._get_review_stats(bookings_qs), # Reviews from that bookings
         }
         
