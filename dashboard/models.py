@@ -67,6 +67,8 @@ class Review(models.Model):
     stars = models.IntegerField(validators=[MinValueValidator(1), MaxValueValidator(5)])
     # the validators assure that the number won't be smaller than 1 or greater than 5.
     description = models.TextField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True) 
+    updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return f"{self.stars} stars for booking {self.booking.id}"
