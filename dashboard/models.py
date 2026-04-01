@@ -1,5 +1,6 @@
 from django.db import models
 from django.core.validators import MinValueValidator, MaxValueValidator
+from django.core.exceptions import ValidationError
 
 from .consts import PetSpecies, BookingService
 
@@ -43,6 +44,18 @@ class Booking(models.Model):
 
     def __str__(self):
         return f"Booking for {self.pet.name}. Starts: {self.start_date.date()}. Finishes: {self.end_date.date()}"
+
+    def clean(self):
+        # Validate that the end_date is not earlier than the start_date
+        if self.start_date and self.end_date:
+            if self.end_date < self.start_date:
+                raise ValidationError(
+                    "The end date cannot be earlier than the start date."
+                )
+
+    def save(self, *args, **kwargs):
+        self.full_clean()  # This forces the validation to run before saving.
+        super().save(*args, **kwargs)  # This saves the changes in the database
 
 
 class Review(models.Model):
