@@ -12,13 +12,20 @@ def get_period_range(period):
         return None, None
 
     # If they don't give us a period, or they ask us for "this_year"
-    if period is None or period == "this_year":
-        start_date = now.replace(month=1, day=1, hour=0, minute=0, second=0)
+    if period is None or period == "this_month":
+        start_date = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+
+    elif period == "this_year":
+        start_date = now.replace(
+            month=1, day=1, hour=0, minute=0, second=0, microsecond=0
+        )
 
     elif period == "last_month":
         # From day 1 to the last day of last month
         last_month = now - relativedelta(months=1)
-        start_date = last_month.replace(day=1, hour=0, minute=0, second=0)
+        start_date = last_month.replace(
+            day=1, hour=0, minute=0, second=0, microsecond=0
+        )
         # The `.replace()` method of a `datetime` object creates a new object identical to the original but with the fields you choose changed. It does not modify the original (dates in Python are immutable).
         end_date = start_date + relativedelta(months=1) - timedelta(seconds=1)
 
