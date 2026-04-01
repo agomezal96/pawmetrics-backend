@@ -19,6 +19,8 @@ class PetSerializer(serializers.ModelSerializer):
 class BookingSerializer(serializers.ModelSerializer):
     pet_name = serializers.ReadOnlyField(source="pet.name")
     pet_species = serializers.ReadOnlyField(source="pet.species")
+    pet_breed = serializers.ReadOnlyField(source="pet.breed")
+
     # Booking -> Pet -> Requester -> full_name
     requester_name = serializers.ReadOnlyField(source="pet.requester.full_name")
 
@@ -34,6 +36,7 @@ class BookingSerializer(serializers.ModelSerializer):
             "pet",  # original ID from the pet
             "pet_name",
             "pet_species",
+            "pet_breed",
             "requester_name",
         ]
 
