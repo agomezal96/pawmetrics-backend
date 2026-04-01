@@ -20,6 +20,7 @@ class Requester(models.Model):
 class Pet(models.Model):
     name = models.CharField(max_length=100)
     species = models.CharField(max_length=10, choices=PetSpecies.choices)
+    breed = models.CharField(max_length=100, blank=True, null=True, default='Unknown')
     # 1:N relation: an owner has lots of pets.
     # If we delete the requester, the pet is not deleted, the requester field will remain null.
     requester = models.ForeignKey(
