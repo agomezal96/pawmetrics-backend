@@ -6,7 +6,9 @@ from dateutil.relativedelta import relativedelta
 def get_period_range(period):
     now = timezone.now()
     start_date = None
-    end_date = now  # By default, until today
+    end_date = now.replace(
+        hour=23, minute=59, second=59, microsecond=999999
+    )  # By default, until today
 
     if period == "all_time":
         return None, None
@@ -14,10 +16,17 @@ def get_period_range(period):
     # If they don't give us a period, or they ask us for "this_year"
     if period is None or period == "this_month":
         start_date = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        end_date = (start_date + relativedelta(months=1)) - timedelta(
+            microseconds=1
+        )  # The last day of the month
 
     elif period == "this_year":
         start_date = now.replace(
             month=1, day=1, hour=0, minute=0, second=0, microsecond=0
+        )
+        # The end of this year is the lat day of the year:
+        end_date = now.replace(
+            month=12, day=31, hour=23, minute=59, second=59, microsecond=999999
         )
 
     elif period == "last_month":
