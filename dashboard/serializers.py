@@ -13,7 +13,7 @@ class PetSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Pet
-        fields = ["id", "name", "species", "requester", "requester_name"]
+        fields = ["id", "name", "species", "breed", "requester", "requester_name"]
 
 
 class BookingSerializer(serializers.ModelSerializer):

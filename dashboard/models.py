@@ -1,5 +1,6 @@
 from django.db import models
 from django.core.validators import MinValueValidator, MaxValueValidator
+from django.core.exceptions import ValidationError
 
 from .consts import PetSpecies, BookingService
 
@@ -19,6 +20,7 @@ class Requester(models.Model):
 class Pet(models.Model):
     name = models.CharField(max_length=100)
     species = models.CharField(max_length=10, choices=PetSpecies.choices)
+    breed = models.CharField(max_length=100, blank=True, null=True, default='Unknown')
     # 1:N relation: an owner has lots of pets.
     # If we delete the requester, the pet is not deleted, the requester field will remain null.
     requester = models.ForeignKey(
@@ -43,6 +45,18 @@ class Booking(models.Model):
 
     def __str__(self):
         return f"Booking for {self.pet.name}. Starts: {self.start_date.date()}. Finishes: {self.end_date.date()}"
+
+    def clean(self):
+        # Validate that the end_date is not earlier than the start_date
+        if self.start_date and self.end_date:
+            if self.end_date < self.start_date:
+                raise ValidationError(
+                    "The end date cannot be earlier than the start date."
+                )
+
+    def save(self, *args, **kwargs):
+        self.full_clean()  # This forces the validation to run before saving.
+        super().save(*args, **kwargs)  # This saves the changes in the database
 
 
 class Review(models.Model):
