@@ -1,8 +1,9 @@
 # Calculation tools
-from django.db.models import Sum, Count
+from django.db.models import Sum, Count, Avg
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from django.utils import timezone
+from dateutil.relativedelta import relativedelta
 
 from rest_framework import viewsets
 from .models import Requester, Pet, Booking, Review
@@ -54,10 +55,16 @@ class DashboardMetricsView(APIView):
         # 4. Build the response by delegating to private methods. We pass them the filtered 'bookings_qs' to ensure consistency.
 
         data = {
-            "pets": self._get_pet_stats(bookings_qs), # Pets from that bookings
-            "earnings": self._get_earnings_stats(bookings_qs), # Money from that bookings
-            "bookings": self._get_bookings_stats(bookings_qs), # Lists from that bookings
-            "reviews": self._get_review_stats(bookings_qs), # Reviews from that bookings
+            "pets": self._get_pet_stats(bookings_qs),  # Pets from that bookings
+            "earnings": self._get_earnings_stats(
+                bookings_qs
+            ),  # Money from that bookings
+            "bookings": self._get_bookings_stats(
+                bookings_qs
+            ),  # Lists from that bookings
+            "reviews": self._get_review_stats(
+                bookings_qs
+            ),  # Reviews from that bookings
         }
 
         return Response(data)
@@ -123,4 +130,60 @@ class DashboardMetricsView(APIView):
         return {
             "latest_reviews": ReviewSerializer(reviews[:3], many=True).data,
             "total_reviews": reviews.count(),
+        }
+
+
+class SitterScoresView(APIView):
+    def get(self, request):
+
+        data = {
+            "star_sitter_progress": self._get_progress_score(),
+            "global_score": self._get_global_scores(),
+        }
+        return Response(data)
+
+    def _get_global_scores(self):
+        all_reviews = Review.objects.all()
+        total_reviews_global = all_reviews.count()
+        avg_rating_global = all_reviews.aggregate(Avg("stars"))["stars__avg"] or 0
+        return {
+            "total_reviews": total_reviews_global,
+            "average_rating": round(float(avg_rating_global), 1),  # Round the average
+        }
+
+    def _get_progress_score(self):
+        now = timezone.now()
+        six_months_ago = now - relativedelta(months=6)
+        # Unique owners
+        unique_owners_6m = (
+            Booking.objects.filter(start_date__gte=six_months_ago)
+            .values("pet__requester")
+            .distinct()
+            .count()
+        )
+
+        # Repeat owners
+        repeat_owners_6m = (
+            Booking.objects.filter(start_date__gte=six_months_ago)
+            .values("pet__requester")
+            .annotate(total=Count("id"))
+            .filter(total__gte=2)
+            .count()
+        )
+
+        # Recent average stars (for the badge)
+        avg_rating_6m = (
+            Review.objects.filter(booking__start_date__gte=six_months_ago).aggregate(
+                Avg("stars")
+            )["stars__avg"]
+            or 0
+        )
+
+        return {
+            "unique_owners": unique_owners_6m,
+            "unique_owners_target": 5,
+            "repeat_owners": repeat_owners_6m,
+            "repeat_owners_target": 2,
+            "current_rating_6m": round(float(avg_rating_6m), 2),
+            "rating_target": 4.9,
         }
