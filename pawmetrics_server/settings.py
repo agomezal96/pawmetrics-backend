@@ -47,8 +47,8 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
-    "django.middleware.security.SecurityMiddleware",
     "corsheaders.middleware.CorsMiddleware",
+    "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -128,5 +128,7 @@ STATIC_URL = "static/"
 
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",
-    "https://pawmetrics-frontend.vercel.app/"    
+    "https://pawmetrics-frontend.vercel.app",
+    "https://pawmetrics-frontend-dfshh2q56-andreas-projects-1c414b86.vercel.app"
+    
 ]
