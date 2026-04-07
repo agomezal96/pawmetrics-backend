@@ -95,15 +95,16 @@ class DashboardMetricsView(APIView):
     def _get_earnings_stats(self, qs):
         """Calculates the past and future earnings inside the filtered period"""
         now = timezone.now()
-        # We filter on the QS that already includes the time range
+        # 1. Earned: Bookings that have already finished
         past = qs.filter(end_date__lt=now).aggregate(Sum("price"))["price__sum"] or 0
-        future = (
-            qs.filter(start_date__gt=now).aggregate(Sum("price"))["price__sum"] or 0
-        )
-
+        
+        # 2. Pending: Bookings that haven't finished yet (current + future)
+        # Using end_date__gte=now ensures current bookings are counted as incoming money
+        pending = qs.filter(end_date__gte=now).aggregate(Sum("price"))["price__sum"] or 0
+        
         return {
             "past_earnings": float(past),
-            "future_earnings": float(future),
+            "future_earnings": float(pending),
         }
 
     def _get_bookings_stats(self, qs):
