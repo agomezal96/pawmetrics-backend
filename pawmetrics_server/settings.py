@@ -128,7 +128,9 @@ STATIC_URL = "static/"
 
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",
-    "https://pawmetrics-frontend.vercel.app",
-    "https://pawmetrics-frontend-dfshh2q56-andreas-projects-1c414b86.vercel.app"
-    
+    "https://pawmetrics-frontend.vercel.app",    
+]
+
+CORS_ALLOWED_ORIGIN_REGEXES = [
+    r"^https://pawmetrics-frontend.*\.vercel\.app$",
 ]
