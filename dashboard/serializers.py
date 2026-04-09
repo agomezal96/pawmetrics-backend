@@ -5,7 +5,7 @@ from .models import Requester, Pet, Booking, Review
 class RequesterSerializer(serializers.ModelSerializer):
     class Meta:
         model = Requester
-        fields = "__all__"
+        fields = ["id", "name", "last_name", "full_name", "image_url"]
 
 
 class PetSerializer(serializers.ModelSerializer):
@@ -13,16 +13,18 @@ class PetSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Pet
-        fields = ["id", "name", "species", "breed", "requester", "requester_name"]
+        fields = ["id", "name", "species", "breed", "requester", "requester_name", "image_url"]
 
 
 class BookingSerializer(serializers.ModelSerializer):
     pet_name = serializers.ReadOnlyField(source="pet.name")
     pet_species = serializers.ReadOnlyField(source="pet.species")
     pet_breed = serializers.ReadOnlyField(source="pet.breed")
+    pet_image_url = serializers.ReadOnlyField(source="pet.image_url")
 
     # Booking -> Pet -> Requester -> full_name
     requester_name = serializers.ReadOnlyField(source="pet.requester.full_name")
+    requester_image_url = serializers.ReadOnlyField(source="pet.requester.image_url")
 
     class Meta:
         model = Booking
@@ -37,13 +39,16 @@ class BookingSerializer(serializers.ModelSerializer):
             "pet_name",
             "pet_species",
             "pet_breed",
+            "pet_image_url",
             "requester_name",
+            "requester_image_url",
         ]
 
 
 class ReviewSerializer(serializers.ModelSerializer):
     # Review -> Booking -> Pet -> Requester -> full_name
     requester_name = serializers.ReadOnlyField(source="booking.pet.requester.full_name")
+    requester_image_url = serializers.ReadOnlyField(source="booking.pet.requester.image_url")
 
     class Meta:
         model = Review
@@ -54,4 +59,5 @@ class ReviewSerializer(serializers.ModelSerializer):
             "created_at",
             "booking",
             "requester_name",
+            "requester_image_url",
         ]
