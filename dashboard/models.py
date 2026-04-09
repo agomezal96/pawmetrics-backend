@@ -8,6 +8,7 @@ from .consts import PetSpecies, BookingService
 class Requester(models.Model):
     name = models.CharField(max_length=100)
     last_name = models.CharField(max_length=100)
+    image_url = models.URLField(max_length=500, null=True, blank=True)
 
     def __str__(self):
         return self.full_name
@@ -21,6 +22,7 @@ class Pet(models.Model):
     name = models.CharField(max_length=100)
     species = models.CharField(max_length=10, choices=PetSpecies.choices)
     breed = models.CharField(max_length=100, blank=True, null=True, default='Unknown')
+    image_url = models.URLField(max_length=500, null=True, blank=True)
     # 1:N relation: an owner has lots of pets.
     # If we delete the requester, the pet is not deleted, the requester field will remain null.
     requester = models.ForeignKey(
