@@ -124,13 +124,17 @@ class DashboardMetricsView(APIView):
         }
 
     def _get_review_stats(self, qs):
-        "Get the reviews linked to bookings for the selected period"
-        # We just want the reviews of the bookings that are in our filtered queryset
-        reviews = Review.objects.filter(booking__in=qs).order_by("-id")
+        "Get the reviews with description linked to bookings for the selected period"
+        # We just want the reviews with description of the bookings that are in our filtered queryset
+        reviews_with_text = Review.objects.filter(booking__in=qs, description__isnull=False).exclude(description="").order_by("-created_at")
+        
+        # Total reviews
+        all_reviews = Review.objects.filter(booking__in=qs)
+        total_count = all_reviews.count()
 
         return {
-            "latest_reviews": ReviewSerializer(reviews[:3], many=True).data,
-            "total_reviews": reviews.count(),
+            "latest_reviews": ReviewSerializer(reviews_with_text[:3], many=True).data,
+            "total_reviews": total_count,
         }
 
 
